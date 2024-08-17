@@ -1,0 +1,17 @@
+# Binary files #
+*
+!*.*
+!*/
+
+# Bin #
+bin/
+
+# Testing file #
+main.go
+
+# Text files used for testing commands #
+*.txt
+
+# Coverage file
+
+*.out
