@@ -21,7 +21,7 @@ type EnvContent struct {
 }
 
 // LoadFromString loads the content of .env file from multi-lined string.
-func (env *EnvContent) LoadFromString(envContents string) error {
+func (env *EnvContent) LoadFromString(envContents string) (map[string]string, error) {
 
 	lines := strings.Split(envContents, "\n")
 
@@ -38,7 +38,7 @@ func (env *EnvContent) LoadFromString(envContents string) error {
 				s = strings.Split(line, ":")
 			}
 			if s[0] == line || len(s) > 2 {
-				return errWrongFormat
+				return env.keyValuePairs, errWrongFormat
 			}
 
 			key, value := strings.TrimSpace(s[0]), strings.TrimSpace(s[1])
@@ -46,7 +46,7 @@ func (env *EnvContent) LoadFromString(envContents string) error {
 		}
 	}
 
-	return nil
+	return env.keyValuePairs, nil
 }
 
 // LoadFromFile loads the content of a given .env file
@@ -63,7 +63,7 @@ func (env *EnvContent) LoadFromFile(fileName string) (map[string]string, error) 
 		return emptyMap, errReadingFile
 	}
 
-	err = env.LoadFromString(string(fileContent))
+	_, err = env.LoadFromString(string(fileContent))
 
 	if err != nil {
 		return emptyMap, err
@@ -93,7 +93,7 @@ func (env *EnvContent) LoadFromFiles(fileNames []string) (map[string]string, err
 			continue
 		}
 
-		err = env.LoadFromString(string(fileContent))
+		_, err = env.LoadFromString(string(fileContent))
 	}
 
 	if reflect.DeepEqual(env.keyValuePairs, emptyMap) {
