@@ -10,8 +10,7 @@ bin/
 main.go
 
 # Text files used for testing commands #
-*.txt
-!pkg/testdata/
+.env
 
 
 # Coverage file
