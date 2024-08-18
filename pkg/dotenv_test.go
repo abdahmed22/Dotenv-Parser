@@ -29,19 +29,20 @@ type LoadFromFilesTestCase struct {
 }
 
 type GetEnvTestCase struct {
-	desc           string
-	inputOutputMap map[string]string
+	desc        string
+	input       string
+	expectedMap map[string]string
 }
 
 type GetTestCase struct {
 	desc          string
-	inputMap      map[string]string
+	input         string
 	key           string
 	value         string
 	expectedError error
 }
 
-func TestINI_LoadFromString(t *testing.T) {
+func TestENV_LoadFromString(t *testing.T) {
 	parser := EnvContent{}
 	emptyMap := make(map[string]string)
 	testCases := []LoadFromStringTestCase{
@@ -281,15 +282,15 @@ func TestINI_LoadFromString(t *testing.T) {
 		{
 			desc: "Normal test case 5",
 			input: "\n\n\n\n" +
-				"#comment 1" +
+				"#comment 1\n" +
 				"key1:value1\n " +
 				"key2:value2\n" +
 				"\n\n\n\n" +
-				"#Comment 2" +
+				"#Comment 2\n" +
 				"key3=value3\n" +
-				"key4=value4" +
-				"#comment 3" +
-				"#comment 4" +
+				"key4=value4\n" +
+				"#comment 3\n" +
+				"#comment 4\n" +
 				"\n\n\n\n",
 			expectedError: nil,
 			expectedMap: map[string]string{
@@ -315,7 +316,7 @@ func TestINI_LoadFromString(t *testing.T) {
 
 }
 
-func TestINI_loadFromFile(t *testing.T) {
+func TestENV_LoadFromFile(t *testing.T) {
 	parser := EnvContent{}
 	emptyMap := make(map[string]string)
 	testCases := []LoadFromFileTestCase{
@@ -389,7 +390,7 @@ func TestINI_loadFromFile(t *testing.T) {
 		},
 		{
 			desc:          "Only keys = values as input with spaces",
-			path:          "testdata/test_9.txt",
+			path:          "testdata/test_09.txt",
 			expectedError: nil,
 			expectedMap: map[string]string{
 				"key1": "value1",
@@ -522,6 +523,206 @@ func TestINI_loadFromFile(t *testing.T) {
 
 			assert.Equal(t, test.expectedError, resultedError)
 			if !reflect.DeepEqual(test.expectedMap, resultedMap) {
+				t.Fail()
+			}
+
+		})
+	}
+}
+
+func TestENV_GetEnv(t *testing.T) {
+	parser := EnvContent{}
+	emptyMap := make(map[string]string)
+	testCases := []GetEnvTestCase{
+		{
+			desc:        "Empty Map",
+			input:       "",
+			expectedMap: emptyMap,
+		},
+		{
+			desc:  "Only one key = value",
+			input: "key=value",
+			expectedMap: map[string]string{
+				"key": "value",
+			},
+		},
+		{
+			desc: "Normal test case 1",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4",
+			expectedMap: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+				"key3": "value3",
+				"key4": "value4",
+			},
+		},
+		{
+			desc: "Normal test case 2",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4\n" +
+				"key5:value5\n" +
+				"key6:value6",
+			expectedMap: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+				"key3": "value3",
+				"key4": "value4",
+				"key5": "value5",
+				"key6": "value6",
+			},
+		},
+		{
+			desc: "Normal test case 3",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4\n" +
+				"key5:value5\n" +
+				"key6:value6\n" +
+				"key7:value7\n" +
+				"key8:value8",
+			expectedMap: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+				"key3": "value3",
+				"key4": "value4",
+				"key5": "value5",
+				"key6": "value6",
+				"key7": "value7",
+				"key8": "value8",
+			},
+		},
+		{
+			desc: "Normal test case 4",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3",
+			expectedMap: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+				"key3": "value3",
+			},
+		},
+		{
+			desc: "Normal test case 5",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4\n" +
+				"key5:value5\n" +
+				"key6:value6\n" +
+				"key7:value7\n" +
+				"key8:value8\n" +
+				"key9:value9\n" +
+				"key10:value10",
+			expectedMap: map[string]string{
+				"key1":  "value1",
+				"key2":  "value2",
+				"key3":  "value3",
+				"key4":  "value4",
+				"key5":  "value5",
+				"key6":  "value6",
+				"key7":  "value7",
+				"key8":  "value8",
+				"key9":  "value9",
+				"key10": "value10",
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.desc, func(t *testing.T) {
+
+		_:
+			parser.LoadFromString(test.input)
+			resultedMap := parser.GetEnv()
+
+			if !reflect.DeepEqual(test.expectedMap, resultedMap) {
+				t.Fail()
+			}
+
+		})
+	}
+}
+
+func TestINI_Get(t *testing.T) {
+	parser := EnvContent{}
+	testCases := []GetTestCase{
+		{
+			desc:          "Empty map as input",
+			input:         "",
+			key:           "key1",
+			value:         "",
+			expectedError: errMissingValue,
+		},
+		{
+			desc:          "Normal case 1",
+			input:         "key1:value1",
+			key:           "key1",
+			value:         "value1",
+			expectedError: nil,
+		},
+		{
+			desc: "Normal case 2",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4\n" +
+				"key5:value5\n" +
+				"key6:value6\n" +
+				"key7:value7\n" +
+				"key8:value8\n" +
+				"key9:value9\n" +
+				"key10:value10",
+			key:           "key2",
+			value:         "value2",
+			expectedError: nil,
+		},
+		{
+			desc: "Normal case 3",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4",
+			key:           "key5",
+			value:         "",
+			expectedError: errMissingValue,
+		},
+		{
+			desc: "Normal case 4",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3\n" +
+				"key4:value4\n" +
+				"key5:value5\n" +
+				"key6:value6\n" +
+				"key7:value7",
+			key:           "key1",
+			value:         "value1",
+			expectedError: nil,
+		},
+		{
+			desc: "Normal case 5",
+			input: "key1:value1\n " +
+				"key2:value2\n" +
+				"key3:value3",
+			key:           "key4",
+			value:         "",
+			expectedError: errMissingValue,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.desc, func(t *testing.T) {
+			_, _ = parser.LoadFromString(test.input)
+			resultedValue, resultedError := parser.Get(test.key)
+
+			assert.Equal(t, test.expectedError, resultedError)
+			if resultedValue != test.value {
 				t.Fail()
 			}
 

@@ -3,8 +3,8 @@ package dotenv
 
 import (
 	"errors"
+	"fmt"
 	"os"
-	"reflect"
 	"strings"
 )
 
@@ -22,11 +22,17 @@ type EnvContent struct {
 
 // LoadFromString loads the content of .env file from multi-lined string.
 func (env *EnvContent) LoadFromString(envContents string) (map[string]string, error) {
+	env.keyValuePairs = make(map[string]string)
+	return env.loadFromString(envContents)
+}
+
+func (env *EnvContent) loadFromString(envContents string) (map[string]string, error) {
 
 	lines := strings.Split(envContents, "\n")
 
 	for _, line := range lines {
 
+		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
 		} else if string(line[0]) == "#" {
@@ -46,6 +52,11 @@ func (env *EnvContent) LoadFromString(envContents string) (map[string]string, er
 		}
 	}
 
+	emptyMap := make(map[string]string)
+	if fmt.Sprint(emptyMap) == fmt.Sprint(env.keyValuePairs) {
+		return emptyMap, errFileIsEmpty
+	}
+
 	return env.keyValuePairs, nil
 }
 
@@ -63,13 +74,13 @@ func (env *EnvContent) LoadFromFile(fileName string) (map[string]string, error) 
 		return emptyMap, errReadingFile
 	}
 
-	_, err = env.LoadFromString(string(fileContent))
+	_, err = env.loadFromString(string(fileContent))
 
 	if err != nil {
 		return emptyMap, err
 	}
 
-	if reflect.DeepEqual(env.keyValuePairs, emptyMap) {
+	if fmt.Sprint(emptyMap) == fmt.Sprint(env.keyValuePairs) {
 		return emptyMap, errFileIsEmpty
 	}
 
@@ -93,10 +104,10 @@ func (env *EnvContent) LoadFromFiles(fileNames []string) (map[string]string, err
 			continue
 		}
 
-		_, err = env.LoadFromString(string(fileContent))
+		_, err = env.loadFromString(string(fileContent))
 	}
 
-	if reflect.DeepEqual(env.keyValuePairs, emptyMap) {
+	if fmt.Sprint(emptyMap) == fmt.Sprint(env.keyValuePairs) {
 		return emptyMap, errFileIsEmpty
 	}
 	return env.keyValuePairs, err
