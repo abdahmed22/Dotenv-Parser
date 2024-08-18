@@ -11,7 +11,7 @@ main.go
 
 # Text files used for testing commands #
 *.txt
-!pkg/testdata
+!pkg/testdata/
 
 
 # Coverage file
