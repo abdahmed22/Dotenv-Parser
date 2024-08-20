@@ -1,6 +1,7 @@
 package dotenv
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -29,9 +30,16 @@ type LoadFromFilesTestCase struct {
 }
 
 type GetEnvTestCase struct {
-	desc        string
-	input       string
-	expectedMap map[string]string
+	desc          string
+	input         string
+	expectedError error
+	expectedMap   map[string]string
+}
+
+type SetEnvTestCase struct {
+	desc          string
+	path          string
+	expectedError error
 }
 
 type GetTestCase struct {
@@ -535,13 +543,15 @@ func TestENV_GetEnv(t *testing.T) {
 	emptyMap := make(map[string]string)
 	testCases := []GetEnvTestCase{
 		{
-			desc:        "Empty Map",
-			input:       "",
-			expectedMap: emptyMap,
+			desc:          "Empty Map",
+			input:         "",
+			expectedError: errEmptyMap,
+			expectedMap:   emptyMap,
 		},
 		{
-			desc:  "Only one key = value",
-			input: "key=value",
+			desc:          "Only one key = value",
+			input:         "key=value",
+			expectedError: nil,
 			expectedMap: map[string]string{
 				"key": "value",
 			},
@@ -552,6 +562,7 @@ func TestENV_GetEnv(t *testing.T) {
 				"key2:value2\n" +
 				"key3:value3\n" +
 				"key4:value4",
+			expectedError: nil,
 			expectedMap: map[string]string{
 				"key1": "value1",
 				"key2": "value2",
@@ -567,6 +578,7 @@ func TestENV_GetEnv(t *testing.T) {
 				"key4:value4\n" +
 				"key5:value5\n" +
 				"key6:value6",
+			expectedError: nil,
 			expectedMap: map[string]string{
 				"key1": "value1",
 				"key2": "value2",
@@ -586,6 +598,7 @@ func TestENV_GetEnv(t *testing.T) {
 				"key6:value6\n" +
 				"key7:value7\n" +
 				"key8:value8",
+			expectedError: nil,
 			expectedMap: map[string]string{
 				"key1": "value1",
 				"key2": "value2",
@@ -602,6 +615,7 @@ func TestENV_GetEnv(t *testing.T) {
 			input: "key1:value1\n " +
 				"key2:value2\n" +
 				"key3:value3",
+			expectedError: nil,
 			expectedMap: map[string]string{
 				"key1": "value1",
 				"key2": "value2",
@@ -620,6 +634,7 @@ func TestENV_GetEnv(t *testing.T) {
 				"key8:value8\n" +
 				"key9:value9\n" +
 				"key10:value10",
+			expectedError: nil,
 			expectedMap: map[string]string{
 				"key1":  "value1",
 				"key2":  "value2",
@@ -638,12 +653,38 @@ func TestENV_GetEnv(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
 
-		_:
-			parser.LoadFromString(test.input)
-			resultedMap := parser.GetEnv()
+			_, _ = parser.LoadFromString(test.input)
+			resultedMap, resultedError := parser.GetEnv()
 
+			assert.Equal(t, test.expectedError, resultedError)
 			if !reflect.DeepEqual(test.expectedMap, resultedMap) {
 				t.Fail()
+			}
+
+		})
+	}
+}
+
+func TestENV_SetEnv(t *testing.T) {
+	parser := EnvContent{}
+	testCases := []SetEnvTestCase{
+		{
+			desc:          "Empty file as input",
+			path:          "testdata/test_00.txt",
+			expectedError: errFileIsEmpty,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.desc, func(t *testing.T) {
+			envMap, _ := parser.LoadFromFile(test.path)
+			actualError := parser.SetEnv()
+
+			assert.Equal(t, test.expectedError, actualError)
+
+			for key, expectedValue := range envMap {
+				actualValue := os.Getenv(key)
+
+				assert.Equal(t, expectedValue, actualValue)
 			}
 
 		})
@@ -716,6 +757,7 @@ func TestINI_Get(t *testing.T) {
 			expectedError: errMissingValue,
 		},
 	}
+
 	for _, test := range testCases {
 		t.Run(test.desc, func(t *testing.T) {
 			_, _ = parser.LoadFromString(test.input)

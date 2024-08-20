@@ -14,6 +14,7 @@ var (
 	errWrongFormat   = errors.New(".env is not in correct format")
 	errAlreadyExists = errors.New("key value pair already exists")
 	errMissingValue  = errors.New("value for the given key is not found")
+	errEmptyMap      = errors.New(" map does not has no key value pairs")
 )
 
 type EnvContent struct {
@@ -114,15 +115,43 @@ func (env *EnvContent) LoadFromFiles(fileNames []string) (map[string]string, err
 }
 
 // GetEnv retrives the key value pairs of the .env files
-func (env *EnvContent) GetEnv() map[string]string {
-	return env.keyValuePairs
+func (env *EnvContent) GetEnv() (map[string]string, error) {
+	emptyMap := make(map[string]string)
+
+	if fmt.Sprint(emptyMap) == fmt.Sprint(env.keyValuePairs) {
+		return emptyMap, errEmptyMap
+	}
+
+	return env.keyValuePairs, nil
 }
 
-// Get retrives a value for a specific key
+// SetEnv sets the key value pairs to enviroment
+func (env *EnvContent) SetEnv() error {
+
+	if env.keyValuePairs == nil {
+		return errEmptyMap
+	}
+
+	for key, value := range env.keyValuePairs {
+		os.Setenv(key, value)
+	}
+
+	return nil
+}
+
+// Get retrives a value for a specific key from the env map
 func (env *EnvContent) Get(key string) (string, error) {
 	value := env.keyValuePairs[key]
 	if value == "" {
 		return value, errMissingValue
 	}
 	return value, nil
+}
+
+// Set sets a value for a specific key to the env map
+func (env *EnvContent) Set(key string, value string) {
+	if env.keyValuePairs == nil {
+		env.keyValuePairs = make(map[string]string)
+	}
+	env.keyValuePairs[key] = value
 }
